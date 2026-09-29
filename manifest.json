@@ -1,0 +1,10 @@
+{
+  "name": "NCC Manager",
+  "short_name": "NCC Manager",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fa",
+  "theme_color": "#17365d",
+  "lang": "it-IT",
+  "description": "Gestione servizi per noleggio con conducente"
+}
