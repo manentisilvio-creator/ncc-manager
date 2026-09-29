@@ -42,6 +42,7 @@ async function initApp(){
   $("appShell").classList.remove("hidden");
   $("userEmail").textContent=session.user.email||"Utente autorizzato";
   await loadServices();
+  await loadPeopleCloud();
   renderPeople();
   renderToday(); renderCalendar();
   setupRealtime();
@@ -50,9 +51,15 @@ async function initApp(){
 
 function setupRealtime(){
   if(window.__nccChannel) sb.removeChannel(window.__nccChannel);
-  window.__nccChannel=sb.channel("ncc-servizi-live")
+  window.__nccChannel=sb.channel("ncc-live")
     .on("postgres_changes",{event:"*",schema:"public",table:"Servizi"},async()=>{
       await syncServices(true);
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"Autisti"},async()=>{
+      await loadPeopleCloud(); renderPeople(); renderSelects();
+    })
+    .on("postgres_changes",{event:"*",schema:"public",table:"Veicoli"},async()=>{
+      await loadPeopleCloud(); renderPeople(); renderSelects();
     })
     .subscribe((status)=>{
       console.log("NCC realtime:",status);
@@ -71,7 +78,10 @@ async function syncServices(forceRender=false){
 function startSyncFallback(){
   if(realtimeTimer) clearInterval(realtimeTimer);
   realtimeTimer=setInterval(async()=>{
-    if(document.visibilityState!=="hidden") await syncServices(false);
+    if(document.visibilityState!=="hidden"){
+      await syncServices(false);
+      await loadPeopleCloud(); renderPeople(); renderSelects();
+    }
   },5000);
   document.addEventListener("visibilitychange",async()=>{
     if(document.visibilityState!=="hidden") await syncServices(true);
@@ -238,15 +248,49 @@ function addGoogleCalendar(id){
 function loadPeopleLocal(){
   try{const x=JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}");db.drivers=x.drivers||[];db.cars=x.cars||[];}catch(e){db.drivers=[];db.cars=[];}
 }
-function addDriver(){
- const n=$("newDriver").value.trim();if(!n){alert("Inserisci il nome dell'autista.");return;}
- db.drivers.push({id:Date.now(),name:n,phone:$("newDriverPhone").value});savePeopleLocal();
- $("newDriver").value="";$("newDriverPhone").value="";renderPeople();renderSelects();
+
+async function loadPeopleCloud(){
+  const [dr,cars]=await Promise.all([
+    sb.from("Autisti").select("id,nome,telefono").order("nome"),
+    sb.from("Veicoli").select("id,nome,targa").order("nome")
+  ]);
+  if(dr.error || cars.error){
+    console.error("Errore caricamento autisti/veicoli",dr.error,cars.error);
+    // Fallback locale: l'app continua a funzionare anche prima della creazione delle tabelle.
+    loadPeopleLocal();
+    return;
+  }
+  db.drivers=(dr.data||[]).map(x=>({id:x.id,name:x.nome||"",phone:x.telefono||""}));
+  db.cars=(cars.data||[]).map(x=>({id:x.id,name:x.nome||"",plate:x.targa||""}));
+  // Migrazione automatica dei nomi già salvati sul Mac nel cloud, senza duplicati.
+  const local=(()=>{try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}")}catch(e){return {}}})();
+  if((dr.data||[]).length===0 && Array.isArray(local.drivers) && local.drivers.length){
+    const rows=local.drivers.map(x=>({nome:x.name,telefono:x.phone||null}));
+    const {error}=await sb.from("Autisti").upsert(rows,{onConflict:"nome"});
+    if(!error) db.drivers=rows.map(x=>({name:x.nome,phone:x.telefono||""}));
+  }
+  if((cars.data||[]).length===0 && Array.isArray(local.cars) && local.cars.length){
+    const rows=local.cars.map(x=>({nome:x.name,targa:x.plate}));
+    const {error}=await sb.from("Veicoli").upsert(rows,{onConflict:"targa"});
+    if(!error) db.cars=rows.map(x=>({name:x.nome,plate:x.targa}));
+  }
 }
-function addCar(){
- const n=$("newCar").value.trim(),p=$("newPlate").value.trim();if(!n||!p){alert("Inserisci modello e targa.");return;}
- db.cars.push({id:Date.now(),name:n,plate:p});savePeopleLocal();
- $("newCar").value="";$("newPlate").value="";renderPeople();renderSelects();
+
+async function addDriver(){
+ const n=$("newDriver").value.trim(), phone=$("newDriverPhone").value.trim();
+ if(!n){alert("Inserisci il nome dell'autista.");return;}
+ const {error}=await sb.from("Autisti").upsert({nome:n,telefono:phone||null},{onConflict:"nome"});
+ if(error){alert("Errore nel salvataggio dell'autista: "+error.message);return;}
+ $("newDriver").value=""; $("newDriverPhone").value="";
+ await loadPeopleCloud(); renderPeople(); renderSelects();
+}
+async function addCar(){
+ const n=$("newCar").value.trim(), p=$("newPlate").value.trim().toUpperCase();
+ if(!n||!p){alert("Inserisci modello e targa.");return;}
+ const {error}=await sb.from("Veicoli").upsert({nome:n,targa:p},{onConflict:"targa"});
+ if(error){alert("Errore nel salvataggio del veicolo: "+error.message);return;}
+ $("newCar").value=""; $("newPlate").value="";
+ await loadPeopleCloud(); renderPeople(); renderSelects();
 }
 function savePeopleLocal(){
   const old=JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}");
@@ -256,6 +300,7 @@ function renderPeople(){
  $("drivers").innerHTML=db.drivers.map(x=>`<div class="card">${esc(x.name)} · ${esc(x.phone||"")}</div>`).join("")||'<span class="empty">Nessun autista inserito.</span>';
  $("cars").innerHTML=db.cars.map(x=>`<div class="card">${esc(x.name)} · <b>${esc(x.plate)}</b></div>`).join("")||'<span class="empty">Nessun veicolo inserito.</span>';
 }
+
 function goBack(){show("services",document.querySelectorAll("nav button")[2]);}
 
 async function importLocalData(){
