@@ -84,7 +84,7 @@ function fromRow(r){
     partenza:r.partenza||"", destinazione:r.destinazione||"", fermate:r.fermate||"",
     arrivo_richiesto:r.arrivo_richiesto||"", volo:r.volo_treno||"",
     autista:r.autista||"", telefono_autista:r.telefono_autista||"",
-    targa:r.targa||"", veicolo:r.veicolo||"", note:r.note||""
+    targa:r.targa||"", veicolo:r.veicolo||"", km_partenza:r.km_partenza ?? "", km_arrivo:r.km_arrivo ?? "", note:r.note||""
   };
 }
 
@@ -95,7 +95,7 @@ function toRow(s){
     passeggeri:s.passeggeri?Number(s.passeggeri):null, partenza:s.partenza||null,
     destinazione:s.destinazione||null, fermate:s.fermate||null, arrivo_richiesto:s.arrivo_richiesto||null,
     volo_treno:s.volo||null, autista:s.autista||null, telefono_autista:s.telefono_autista||null,
-    targa:s.targa||null, veicolo:s.veicolo||null, note:s.note||null
+    targa:s.targa||null, veicolo:s.veicolo||null, km_partenza:s.km_partenza!==""&&s.km_partenza!=null?Number(s.km_partenza):null, km_arrivo:s.km_arrivo!==""&&s.km_arrivo!=null?Number(s.km_arrivo):null, note:s.note||null
   };
   return row;
 }
@@ -118,7 +118,7 @@ function newService(){
   editing=null; $("editorTitle").textContent="Nuovo servizio"; clearForm(); show("editor");
 }
 function clearForm(){
-  ["cliente","telefono","partenza","destinazione","volo","note","autista","veicolo","targa"].forEach(x=>{if($(x))$(x).value="";});
+  ["cliente","telefono","partenza","destinazione","volo","note","autista","veicolo","targa","km_partenza","km_arrivo"].forEach(x=>{if($(x))$(x).value="";});
   $("numero").value="NCC-"+Date.now().toString().slice(-6);
   const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
   $("data").value=d.toISOString().slice(0,10);
@@ -136,7 +136,7 @@ async function saveService(){
     numero:$("numero").value,stato:$("stato").value,data:$("data").value,ora:$("ora").value,
     cliente:$("cliente").value,telefono:$("telefono").value,passeggeri:$("passeggeri").value,
     partenza:$("partenza").value,destinazione:$("destinazione").value,volo:$("volo").value,
-    autista:$("autista").value,veicolo:$("veicolo").value,targa:$("targa").value,note:$("note").value
+    autista:$("autista").value,veicolo:$("veicolo").value,targa:$("targa").value,km_partenza:$("km_partenza").value,km_arrivo:$("km_arrivo").value,note:$("note").value
   };
   if(!s.data||!s.ora){alert("Inserisci data e ora.");return;}
   let error;
@@ -165,7 +165,7 @@ function card(s){
  return `<div class="card service"><h3>${esc(s.ora)} · ${esc(s.cliente||"Cliente")}</h3>
  <span class="badge">${esc(s.stato)}</span>
  <p>📍 ${esc(s.partenza)} → ${esc(s.destinazione)}</p>
- <p>👤 ${esc(s.autista||"Autista da assegnare")} · 🚘 ${esc(s.veicolo||"Veicolo da assegnare")} · ${esc(s.targa||"Targa da assegnare")}</p>
+ <p>👤 ${esc(s.autista||"Autista da assegnare")} · 🚘 ${esc(s.veicolo||"Veicolo da assegnare")} · ${esc(s.targa||"Targa da assegnare")}</p><p>📍 Km: ${esc(s.km_partenza||"—")} → ${esc(s.km_arrivo||"—")}</p>
  <p>📅 ${esc(s.data)} · ${esc(s.passeggeri)} pax${s.telefono?" · 📞 "+esc(s.telefono):""}</p>
  <div class="row"><button class="action light" onclick="editService(${s.id})">Modifica</button>
  <button class="action light" onclick="addGoogleCalendar(${s.id})">Google Calendar</button>
@@ -174,7 +174,7 @@ function card(s){
 async function editService(id){
  const s=db.services.find(x=>x.id===id); if(!s)return;
  editing=id; $("editorTitle").textContent="Modifica servizio";
- ["numero","stato","data","ora","cliente","telefono","passeggeri","partenza","destinazione","volo","autista","veicolo","targa","note"].forEach(k=>{if($(k))$(k).value=s[k]||"";});
+ ["numero","stato","data","ora","cliente","telefono","passeggeri","partenza","destinazione","volo","autista","veicolo","targa","km_partenza","km_arrivo","note"].forEach(k=>{if($(k))$(k).value=s[k]||"";});
  renderSelects(); show("editor");
 }
 async function deleteService(id){
@@ -213,7 +213,7 @@ function addGoogleCalendar(id){
  const start=new Date(s.data+"T"+s.ora),end=new Date(start.getTime()+3600000);
  const fmt=x=>x.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
  const title="NCC - "+(s.cliente||"Servizio");
- const details=`Servizio ${s.numero}\nPartenza: ${s.partenza}\nDestinazione: ${s.destinazione}\nPasseggeri: ${s.passeggeri}\nAutista: ${s.autista}\nVeicolo: ${s.veicolo}\nTarga: ${s.targa}\nNote: ${s.note||""}`;
+ const details=`Servizio ${s.numero}\nPartenza: ${s.partenza}\nDestinazione: ${s.destinazione}\nPasseggeri: ${s.passeggeri}\nAutista: ${s.autista}\nVeicolo: ${s.veicolo}\nTarga: ${s.targa}\nKm partenza: ${s.km_partenza||""}\nKm arrivo: ${s.km_arrivo||""}\nNote: ${s.note||""}`;
  window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+fmt(start)+"/"+fmt(end)+"&details="+encodeURIComponent(details)+"&location="+encodeURIComponent(s.partenza||""),"_blank");
 }
 

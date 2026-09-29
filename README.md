@@ -1,13 +1,19 @@
-# NCC Manager v5
+# NCC Manager v6
 
-Versione collegata a Supabase con:
-- accesso tramite Supabase Auth
-- servizi condivisi nel database Supabase
-- aggiornamento in tempo reale tramite Supabase Realtime
-- sincronizzazione di sicurezza automatica ogni 5 secondi e al ritorno nell'app
-- RLS per utenti autenticati
-- archivio permanente dei servizi
-- nessun prezzo o metodo di pagamento
+Web app per la gestione condivisa dei servizi NCC.
 
-## Pubblicazione
-Caricare i file nella root del repository GitHub Pages e fare commit su `main`.
+- Supabase Auth + database condiviso
+- Aggiornamento automatico/realtime
+- Archivio permanente dei servizi
+- Autista, veicolo e targa modificabili
+- Chilometri di partenza e di arrivo
+- Nessun prezzo o metodo di pagamento
+
+## Database
+Aggiungere alla tabella `public."Servizi"` i campi:
+
+```sql
+alter table public."Servizi"
+add column if not exists km_partenza integer,
+add column if not exists km_arrivo integer;
+```
