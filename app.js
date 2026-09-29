@@ -5,6 +5,8 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 const LOCAL_KEY="ncc_manager_v2";
 let db={services:[],drivers:[],cars:[]};
 let currentMonth=new Date(), selectedDay="", editing=null;
+let realtimeTimer=null;
+let lastSyncSignature="";
 
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -35,13 +37,37 @@ async function initApp(){
   renderPeople();
   renderToday(); renderCalendar();
   setupRealtime();
+  startSyncFallback();
 }
 
 function setupRealtime(){
   if(window.__nccChannel) sb.removeChannel(window.__nccChannel);
   window.__nccChannel=sb.channel("ncc-servizi-live")
-    .on("postgres_changes",{event:"*",schema:"public",table:"Servizi"},async()=>{await loadServices();renderAll();})
-    .subscribe();
+    .on("postgres_changes",{event:"*",schema:"public",table:"Servizi"},async()=>{
+      await syncServices(true);
+    })
+    .subscribe((status)=>{
+      console.log("NCC realtime:",status);
+    });
+}
+
+async function syncServices(forceRender=false){
+  const before=lastSyncSignature;
+  await loadServices();
+  const signature=db.services.map(s=>[s.id,s.data,s.ora,s.numero,s.stato,s.cliente,s.autista,s.targa].join("|")).join(";;");
+  const changed=signature!==before;
+  lastSyncSignature=signature;
+  if(changed||forceRender) renderAll();
+}
+
+function startSyncFallback(){
+  if(realtimeTimer) clearInterval(realtimeTimer);
+  realtimeTimer=setInterval(async()=>{
+    if(document.visibilityState!=="hidden") await syncServices(false);
+  },5000);
+  document.addEventListener("visibilitychange",async()=>{
+    if(document.visibilityState!=="hidden") await syncServices(true);
+  });
 }
 
 async function loadServices(){
