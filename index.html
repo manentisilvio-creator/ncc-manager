@@ -57,8 +57,8 @@
 <div><label>Cliente</label><input id="cliente"></div><div><label>Telefono</label><input id="telefono" type="tel"></div>
 <div class="full"><label>Partenza</label><input id="partenza"></div><div class="full"><label>Destinazione</label><input id="destinazione"></div>
 <div><label>Passeggeri</label><input id="passeggeri" type="number" min="1" value="1"></div><div><label>Volo / treno</label><input id="volo"></div>
-<div><label>Autista</label><select id="autista"></select></div><div><label>Auto / targa</label><select id="auto"></select></div>
-<div><label>Prezzo (€)</label><input id="prezzo" type="number" step=".01"></div><div><label>Pagamento</label><select id="pagamento"><option>Da definire</option><option>Contanti</option><option>Carta</option><option>Bonifico</option><option>Fattura</option></select></div>
+<div><label>Autista</label><input id="autista" list="autistiList" autocomplete="off" placeholder="Scrivi il nome dell’autista"><datalist id="autistiList"></datalist></div><div><label>Auto / targa</label><input id="auto" list="autoList" autocomplete="off" placeholder="Scrivi modello o targa"><datalist id="autoList"></datalist></div>
+
 <div class="full"><label>Note</label><textarea id="note"></textarea></div>
 </div><div class="row" style="margin-top:14px"><button class="action" onclick="saveService()">Salva servizio</button><button class="action light" onclick="goBack()">Annulla</button></div>
 </div></section>

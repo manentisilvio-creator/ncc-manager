@@ -23,7 +23,7 @@ function newService(){
   editing=null; clearForm(); show("editor");
 }
 function clearForm(){
-  ["cliente","telefono","partenza","destinazione","volo","prezzo","note"].forEach(x=>$(x).value="");
+  ["cliente","telefono","partenza","destinazione","volo","note","autista","auto"].forEach(x=>{if($(x))$(x).value="";});
   $("numero").value="NCC-"+Date.now().toString().slice(-6);
   let d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
   $("data").value=d.toISOString().slice(0,10);
@@ -33,11 +33,11 @@ function clearForm(){
   renderSelects();
 }
 function renderSelects(){
-  $("autista").innerHTML='<option value="">Seleziona</option>'+db.drivers.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join("");
-  $("auto").innerHTML='<option value="">Seleziona</option>'+db.cars.map(x=>`<option value="${esc(x.name+" – "+x.plate)}">${esc(x.name)} – ${esc(x.plate)}</option>`).join("");
+  $("autistiList").innerHTML=db.drivers.map(x=>`<option value="${esc(x.name)}"></option>`).join("");
+  $("autoList").innerHTML=db.cars.map(x=>`<option value="${esc(x.name+" – "+x.plate)}"></option>`).join("");
 }
 function saveService(){
-  const s={id:editing||Date.now(),numero:$("numero").value,stato:$("stato").value,data:$("data").value,ora:$("ora").value,cliente:$("cliente").value,telefono:$("telefono").value,partenza:$("partenza").value,destinazione:$("destinazione").value,passeggeri:$("passeggeri").value,volo:$("volo").value,autista:$("autista").value,auto:$("auto").value,prezzo:$("prezzo").value,pagamento:$("pagamento").value,note:$("note").value};
+  const s={id:editing||Date.now(),numero:$("numero").value,stato:$("stato").value,data:$("data").value,ora:$("ora").value,cliente:$("cliente").value,telefono:$("telefono").value,partenza:$("partenza").value,destinazione:$("destinazione").value,passeggeri:$("passeggeri").value,volo:$("volo").value,autista:$("autista").value,auto:$("auto").value,note:$("note").value};
   if(!s.data||!s.ora){alert("Inserisci data e ora.");return;}
   const i=db.services.findIndex(x=>x.id===s.id);
   if(i>=0)db.services[i]=s; else db.services.push(s);
@@ -70,7 +70,7 @@ function card(s){
 function editService(id){
  const s=db.services.find(x=>x.id===id); if(!s)return;
  editing=id;
- ["numero","stato","data","ora","cliente","telefono","partenza","destinazione","passeggeri","volo","autista","auto","prezzo","pagamento","note"].forEach(k=>{if($(k))$(k).value=s[k]||"";});
+ ["numero","stato","data","ora","cliente","telefono","partenza","destinazione","passeggeri","volo","autista","auto","note"].forEach(k=>{if($(k))$(k).value=s[k]||"";});
  renderSelects(); $("autista").value=s.autista||""; $("auto").value=s.auto||"";
  show("editor");
 }
