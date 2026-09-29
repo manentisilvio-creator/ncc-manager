@@ -9,6 +9,14 @@ let realtimeTimer=null;
 let lastSyncSignature="";
 
 const $=id=>document.getElementById(id);
+function calcKmTotali(){
+  const p=Number($("km_partenza")?.value), a=Number($("km_arrivo")?.value);
+  const out=$("km_totali");
+  if(!out)return;
+  if(Number.isFinite(p)&&Number.isFinite(a)&&$("km_partenza").value!==""&&$("km_arrivo").value!=="") out.value=(a-p>=0?a-p:"");
+  else out.value="";
+}
+
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 
 async function login(){
@@ -118,12 +126,12 @@ function newService(){
   editing=null; $("editorTitle").textContent="Nuovo servizio"; clearForm(); show("editor");
 }
 function clearForm(){
-  ["cliente","telefono","partenza","destinazione","volo","note","autista","veicolo","targa","km_partenza","km_arrivo"].forEach(x=>{if($(x))$(x).value="";});
+  ["cliente","telefono","partenza","destinazione","volo","note","autista","veicolo","targa","km_partenza","km_arrivo","km_totali"].forEach(x=>{if($(x))$(x).value="";});
   $("numero").value="NCC-"+Date.now().toString().slice(-6);
   const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
   $("data").value=d.toISOString().slice(0,10);
   $("ora").value=d.toTimeString().slice(0,5);
-  $("passeggeri").value=1; $("stato").value="Da confermare"; renderSelects();
+  $("passeggeri").value=1; $("stato").value="Da confermare"; calcKmTotali(); renderSelects();
 }
 function renderSelects(){
   $("autistiList").innerHTML=db.drivers.map(x=>`<option value="${esc(x.name)}"></option>`).join("");
@@ -132,6 +140,7 @@ function renderSelects(){
 }
 
 async function saveService(){
+  calcKmTotali();
   const s={
     numero:$("numero").value,stato:$("stato").value,data:$("data").value,ora:$("ora").value,
     cliente:$("cliente").value,telefono:$("telefono").value,passeggeri:$("passeggeri").value,
@@ -161,6 +170,11 @@ function renderServices(){
   const a=db.services.filter(s=>Object.values(s).join(" ").toLowerCase().includes(q)).sort((a,b)=>(a.data+a.ora).localeCompare(b.data+b.ora));
   $("serviceList").innerHTML=a.length?a.map(card).join(""):'<div class="card empty">Nessun servizio.</div>';
 }
+function kmTotali(s){
+ const p=Number(s.km_partenza), a=Number(s.km_arrivo);
+ return s.km_partenza!=="" && s.km_arrivo!=="" && Number.isFinite(p) && Number.isFinite(a) && a>=p ? a-p : "";
+}
+
 function card(s){
  return `<div class="card service"><h3>${esc(s.ora)} · ${esc(s.cliente||"Cliente")}</h3>
  <span class="badge">${esc(s.stato)}</span>
@@ -175,7 +189,7 @@ async function editService(id){
  const s=db.services.find(x=>x.id===id); if(!s)return;
  editing=id; $("editorTitle").textContent="Modifica servizio";
  ["numero","stato","data","ora","cliente","telefono","passeggeri","partenza","destinazione","volo","autista","veicolo","targa","km_partenza","km_arrivo","note"].forEach(k=>{if($(k))$(k).value=s[k]||"";});
- renderSelects(); show("editor");
+ calcKmTotali(); renderSelects(); show("editor");
 }
 async function deleteService(id){
  if(!confirm("Eliminare questo servizio?"))return;
@@ -258,3 +272,7 @@ async function importLocalData(){
 sb.auth.onAuthStateChange((event)=>{if(event==="SIGNED_OUT")initApp();});
 loadPeopleLocal();
 initApp();
+
+document.addEventListener("DOMContentLoaded",()=>{
+  ["km_partenza","km_arrivo"].forEach(id=>$(id)?.addEventListener("input",calcKmTotali));
+});
