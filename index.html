@@ -4,15 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#17365d">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#17365d">
 <link rel="manifest" href="manifest.json">
 <title>NCC Manager</title>
 <link rel="stylesheet" href="style.css">
+<style>
+#loginView{max-width:460px;margin:24px auto}
+#loginView .card{margin-top:30px}
+.auth-msg{margin-top:10px;font-size:13px;color:#596773}
+#appShell.hidden{display:none}
+.top-user{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:8px 14px;background:#fff;border-bottom:1px solid #dce3eb;font-size:12px}
+.top-user button{padding:7px 10px;font-size:12px}
+.small-note{font-size:12px;color:#697782;margin-top:8px}
+</style>
 </head>
 <body>
+
+<div id="loginView">
+  <div class="card">
+    <h2>🔐 Accesso NCC Manager</h2>
+    <p class="small-note">Accedi con l'account autorizzato. Tutti gli autisti autorizzati vedranno gli stessi servizi.</p>
+    <div style="margin-top:14px">
+      <label>Email</label>
+      <input id="loginEmail" type="email" autocomplete="username" placeholder="Email">
+    </div>
+    <div style="margin-top:10px">
+      <label>Password</label>
+      <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password">
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="action" onclick="login()">Accedi</button>
+    </div>
+    <div id="loginMsg" class="auth-msg"></div>
+  </div>
+</div>
+
+<div id="appShell" class="hidden">
 <header><h1>🚘 NCC Manager</h1><small>Gestione servizi con conducente</small></header>
+<div class="top-user"><span id="userEmail"></span><button class="action light" onclick="logout()">Esci</button></div>
 <nav>
 <button class="active" onclick="show('dashboard',this)">🏠 Oggi</button>
 <button onclick="show('calendar',this)">📅 Calendario</button>
@@ -40,6 +70,7 @@
 <section id="settings" class="view">
 <div class="card"><h2>Autisti</h2><div id="drivers"></div><div class="grid" style="margin-top:10px"><input id="newDriver" placeholder="Nome autista"><input id="newDriverPhone" placeholder="Telefono"><button class="action" onclick="addDriver()">Aggiungi autista</button></div></div>
 <div class="card"><h2>Auto / Targhe</h2><div id="cars"></div><div class="grid" style="margin-top:10px"><input id="newCar" placeholder="Marca e modello"><input id="newPlate" placeholder="Targa"><button class="action" onclick="addCar()">Aggiungi veicolo</button></div></div>
+<div class="card"><h2>Sincronizzazione</h2><p class="small-note">I servizi sono salvati nel database condiviso Supabase. I dati locali eventualmente presenti sul dispositivo possono essere importati una sola volta.</p><button class="action light" onclick="importLocalData()">Importa eventuali servizi locali</button></div>
 </section>
 
 <section id="daydetail" class="view">
@@ -50,18 +81,25 @@
 </section>
 
 <section id="editor" class="view">
-<div class="card"><h2>Nuovo servizio</h2>
+<div class="card"><h2 id="editorTitle">Nuovo servizio</h2>
 <div class="grid">
-<div><label>Numero servizio</label><input id="numero" readonly></div><div><label>Stato</label><select id="stato"><option>Da confermare</option><option>Confermato</option><option>In corso</option><option>Completato</option><option>Annullato</option></select></div>
+<div><label>Numero servizio</label><input id="numero" readonly></div>
+<div><label>Stato</label><select id="stato"><option>Da confermare</option><option>Confermato</option><option>In corso</option><option>Completato</option><option>Annullato</option></select></div>
 <div><label>Data</label><input id="data" type="date"></div><div><label>Ora</label><input id="ora" type="time"></div>
 <div><label>Cliente</label><input id="cliente"></div><div><label>Telefono</label><input id="telefono" type="tel"></div>
 <div class="full"><label>Partenza</label><input id="partenza"></div><div class="full"><label>Destinazione</label><input id="destinazione"></div>
 <div><label>Passeggeri</label><input id="passeggeri" type="number" min="1" value="1"></div><div><label>Volo / treno</label><input id="volo"></div>
-<div><label>Autista</label><input id="autista" list="autistiList" autocomplete="off" placeholder="Scrivi il nome dell’autista"><datalist id="autistiList"></datalist></div><div><label>Auto / targa</label><input id="auto" list="autoList" autocomplete="off" placeholder="Scrivi modello o targa"><datalist id="autoList"></datalist></div>
-
+<div><label>Autista</label><input id="autista" list="autistiList" autocomplete="off" placeholder="Scrivi il nome dell'autista"><datalist id="autistiList"></datalist></div>
+<div><label>Veicolo</label><input id="veicolo" list="veicoliList" autocomplete="off" placeholder="Marca e modello"><datalist id="veicoliList"></datalist></div>
+<div><label>Targa</label><input id="targa" list="targheList" autocomplete="off" placeholder="AA000AA"><datalist id="targheList"></datalist></div>
 <div class="full"><label>Note</label><textarea id="note"></textarea></div>
-</div><div class="row" style="margin-top:14px"><button class="action" onclick="saveService()">Salva servizio</button><button class="action light" onclick="goBack()">Annulla</button></div>
+</div>
+<div class="row" style="margin-top:14px"><button class="action" onclick="saveService()">Salva servizio</button><button class="action light" onclick="goBack()">Annulla</button></div>
 </div></section>
 </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js" defer></script>
-</body></html>
+</body>
+</html>
