@@ -80,7 +80,11 @@ function startSyncFallback(){
 
 async function loadServices(){
   const {data,error}=await sb.from("Servizi").select("*").order("data_servizio",{ascending:true}).order("ora_servizio",{ascending:true});
-  if(error){alert("Errore nel caricamento dei servizi: "+error.message);return;}
+  if(error){
+    console.error(error);
+    alert("Errore nel caricamento dei servizi. Se hai appena aggiunto i campi Km, esegui SQL_AGGIUNTA_KM.sql in Supabase e poi ricarica l'app.");
+    return;
+  }
   db.services=(data||[]).map(fromRow);
 }
 
@@ -179,7 +183,7 @@ function card(s){
  return `<div class="card service"><h3>${esc(s.ora)} · ${esc(s.cliente||"Cliente")}</h3>
  <span class="badge">${esc(s.stato)}</span>
  <p>📍 ${esc(s.partenza)} → ${esc(s.destinazione)}</p>
- <p>👤 ${esc(s.autista||"Autista da assegnare")} · 🚘 ${esc(s.veicolo||"Veicolo da assegnare")} · ${esc(s.targa||"Targa da assegnare")}</p><p>📍 Km: ${esc(s.km_partenza||"—")} → ${esc(s.km_arrivo||"—")}</p>
+ <p>👤 ${esc(s.autista||"Autista da assegnare")} · 🚘 ${esc(s.veicolo||"Veicolo da assegnare")} · ${esc(s.targa||"Targa da assegnare")}</p><p>📍 Km: ${esc(s.km_partenza||"—")} → ${esc(s.km_arrivo||"—")}${kmTotali(s)!==""?" · Totali: "+esc(kmTotali(s))+" km":""}</p>
  <p>📅 ${esc(s.data)} · ${esc(s.passeggeri)} pax${s.telefono?" · 📞 "+esc(s.telefono):""}</p>
  <div class="row"><button class="action light" onclick="editService(${s.id})">Modifica</button>
  <button class="action light" onclick="addGoogleCalendar(${s.id})">Google Calendar</button>

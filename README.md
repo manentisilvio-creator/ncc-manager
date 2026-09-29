@@ -1,19 +1,12 @@
-# NCC Manager v6
+# NCC Manager v8
 
-Web app per la gestione condivisa dei servizi NCC.
+Versione corretta con:
+- Km partenza
+- Km arrivo
+- Km totali calcolati automaticamente (Km arrivo - Km partenza)
+- sincronizzazione Supabase
+- login e servizi condivisi
 
-- Supabase Auth + database condiviso
-- Aggiornamento automatico/realtime
-- Archivio permanente dei servizi
-- Autista, veicolo e targa modificabili
-- Chilometri di partenza e di arrivo
-- Nessun prezzo o metodo di pagamento
+IMPORTANTE: prima di usare i campi km, eseguire il file `SQL_AGGIUNTA_KM.sql` in Supabase > SQL Editor.
 
-## Database
-Aggiungere alla tabella `public."Servizi"` i campi:
-
-```sql
-alter table public."Servizi"
-add column if not exists km_partenza integer,
-add column if not exists km_arrivo integer;
-```
+Poi caricare i file `index.html`, `app.js`, `style.css`, `manifest.json` e `README.md` nella root del repository GitHub Pages.
