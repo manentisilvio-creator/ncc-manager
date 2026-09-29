@@ -256,13 +256,11 @@ async function loadPeopleCloud(){
   ]);
   if(dr.error || cars.error){
     console.error("Errore caricamento autisti/veicoli",dr.error,cars.error);
-    // Fallback locale: l'app continua a funzionare anche prima della creazione delle tabelle.
     loadPeopleLocal();
     return;
   }
   db.drivers=(dr.data||[]).map(x=>({id:x.id,name:x.nome||"",phone:x.telefono||""}));
   db.cars=(cars.data||[]).map(x=>({id:x.id,name:x.nome||"",plate:x.targa||""}));
-  // Migrazione automatica dei nomi già salvati sul Mac nel cloud, senza duplicati.
   const local=(()=>{try{return JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}")}catch(e){return {}}})();
   if((dr.data||[]).length===0 && Array.isArray(local.drivers) && local.drivers.length){
     const rows=local.drivers.map(x=>({nome:x.name,telefono:x.phone||null}));
@@ -292,13 +290,74 @@ async function addCar(){
  $("newCar").value=""; $("newPlate").value="";
  await loadPeopleCloud(); renderPeople(); renderSelects();
 }
+
+async function editDriver(id){
+  const d=db.drivers.find(x=>x.id===id);
+  if(!d)return;
+  const nome=prompt("Modifica nome autista:",d.name);
+  if(nome===null)return;
+  const n=nome.trim();
+  if(!n){alert("Il nome non può essere vuoto.");return;}
+  const telefono=prompt("Modifica telefono (facoltativo):",d.phone||"");
+  if(telefono===null)return;
+  const {error}=await sb.from("Autisti").update({nome:n,telefono:telefono.trim()||null}).eq("id",id);
+  if(error){alert("Errore nella modifica dell'autista: "+error.message);return;}
+  await loadPeopleCloud(); renderPeople(); renderSelects();
+}
+
+async function deleteDriver(id){
+  const d=db.drivers.find(x=>x.id===id);
+  if(!d)return;
+  if(!confirm("Eliminare l'autista «"+d.name+"» dall'elenco salvato?"))return;
+  const {error}=await sb.from("Autisti").delete().eq("id",id);
+  if(error){alert("Errore nell'eliminazione dell'autista: "+error.message);return;}
+  await loadPeopleCloud(); renderPeople(); renderSelects();
+}
+
+async function editCar(id){
+  const c=db.cars.find(x=>x.id===id);
+  if(!c)return;
+  const nome=prompt("Modifica marca/modello:",c.name);
+  if(nome===null)return;
+  const n=nome.trim();
+  if(!n){alert("Il modello non può essere vuoto.");return;}
+  const targa=prompt("Modifica targa:",c.plate);
+  if(targa===null)return;
+  const p=targa.trim().toUpperCase();
+  if(!p){alert("La targa non può essere vuota.");return;}
+  const {error}=await sb.from("Veicoli").update({nome:n,targa:p}).eq("id",id);
+  if(error){alert("Errore nella modifica del veicolo: "+error.message);return;}
+  await loadPeopleCloud(); renderPeople(); renderSelects();
+}
+
+async function deleteCar(id){
+  const c=db.cars.find(x=>x.id===id);
+  if(!c)return;
+  if(!confirm("Eliminare il veicolo «"+c.name+" - "+c.plate+"» dall'elenco salvato?"))return;
+  const {error}=await sb.from("Veicoli").delete().eq("id",id);
+  if(error){alert("Errore nell'eliminazione del veicolo: "+error.message);return;}
+  await loadPeopleCloud(); renderPeople(); renderSelects();
+}
+
 function savePeopleLocal(){
   const old=JSON.parse(localStorage.getItem(LOCAL_KEY)||"{}");
   localStorage.setItem(LOCAL_KEY,JSON.stringify({services:old.services||[],drivers:db.drivers,cars:db.cars}));
 }
 function renderPeople(){
- $("drivers").innerHTML=db.drivers.map(x=>`<div class="card">${esc(x.name)} · ${esc(x.phone||"")}</div>`).join("")||'<span class="empty">Nessun autista inserito.</span>';
- $("cars").innerHTML=db.cars.map(x=>`<div class="card">${esc(x.name)} · <b>${esc(x.plate)}</b></div>`).join("")||'<span class="empty">Nessun veicolo inserito.</span>';
+ $("drivers").innerHTML=db.drivers.map(x=>`<div class="card">
+   <div><b>${esc(x.name)}</b>${x.phone?" · "+esc(x.phone):""}</div>
+   <div class="row" style="margin-top:8px">
+     <button class="action light" onclick="editDriver(${x.id})">Modifica</button>
+     <button class="action light" onclick="deleteDriver(${x.id})">Elimina</button>
+   </div>
+ </div>`).join("")||'<span class="empty">Nessun autista inserito.</span>';
+ $("cars").innerHTML=db.cars.map(x=>`<div class="card">
+   <div><b>${esc(x.name)}</b> · <b>${esc(x.plate)}</b></div>
+   <div class="row" style="margin-top:8px">
+     <button class="action light" onclick="editCar(${x.id})">Modifica</button>
+     <button class="action light" onclick="deleteCar(${x.id})">Elimina</button>
+   </div>
+ </div>`).join("")||'<span class="empty">Nessun veicolo inserito.</span>';
 }
 
 function goBack(){show("services",document.querySelectorAll("nav button")[2]);}
