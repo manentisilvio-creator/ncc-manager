@@ -89,9 +89,28 @@
 <div><label>Cliente</label><input id="cliente"></div><div><label>Telefono</label><input id="telefono" type="tel"></div>
 <div class="full"><label>Partenza</label><input id="partenza"></div><div class="full"><label>Destinazione</label><input id="destinazione"></div>
 <div><label>Passeggeri</label><input id="passeggeri" type="number" min="1" value="1"></div><div><label>Volo / treno</label><input id="volo"></div>
-<div><label>Autista</label><input id="autista" list="autistiList" autocomplete="off" placeholder="Scrivi il nome dell'autista"><datalist id="autistiList"></datalist></div>
-<div><label>Veicolo</label><input id="veicolo" list="veicoliList" autocomplete="off" placeholder="Marca e modello"><datalist id="veicoliList"></datalist></div>
-<div><label>Targa</label><input id="targa" list="targheList" autocomplete="off" placeholder="AA000AA"><datalist id="targheList"></datalist></div>
+
+<div>
+<label>Autista</label>
+<select id="autista">
+<option value="">Seleziona autista…</option>
+</select>
+</div>
+
+<div>
+<label>Veicolo</label>
+<select id="veicolo">
+<option value="">Seleziona veicolo…</option>
+</select>
+</div>
+
+<div>
+<label>Targa</label>
+<select id="targa">
+<option value="">Seleziona targa…</option>
+</select>
+</div>
+
 <div><label>Km partenza</label><input id="km_partenza" type="number" min="0" step="1" inputmode="numeric" placeholder="Es. 125430"></div>
 <div><label>Km arrivo</label><input id="km_arrivo" type="number" min="0" step="1" inputmode="numeric" placeholder="Es. 125510"></div>
 <div><label>Km totali</label><input id="km_totali" type="number" readonly placeholder="Calcolati automaticamente"></div>
@@ -104,5 +123,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js" defer></script>
+<script src="dropdowns.js" defer></script>
 </body>
 </html>
